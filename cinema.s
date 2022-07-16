@@ -18,13 +18,11 @@ textopoltronas:  .asciiz "\nPoltronas Disponiveis\n"
 # texto da lista de poltronas
 textopoltronaslinha: .asciiz "\n-----------\n"
 textopoltronasdiv: .asciiz "|"
-textopoltronasocupado: .asciiz "X"
-textopoltronaslivre: .asciiz "L"
 
 # legenda da impressao de poltronas
 textopoltronaslegenda: .asciiz "\nLegenda:\n"
-textopoltronaslegenda1: .asciiz "X - Poltrona Ocupada\n"
-textopoltronaslegenda2: .asciiz "L - Poltrona Livre\n"
+textopoltronaslegenda1: .asciiz "1 - Poltrona Ocupada\n"
+textopoltronaslegenda2: .asciiz "0 - Poltrona Livre\n"
 textopoltronaslegenda3: .asciiz "COLUNA\n"
 textopoltronaslegenda4: .asciiz "F"
 textopoltronaslegenda5: .asciiz "I"
@@ -35,6 +33,9 @@ textopoltronaslegenda9: .asciiz "\n"
 
 # texto de compra de poltronas
 textocompra:  .asciiz "\nCompra de poltronas\n"
+textocompra1: .asciiz "Digite a coluna da poltrona desejada: "
+textocompra2: .asciiz "Digite a linha da poltrona desejada: "
+textopoltronaocupada: .asciiz "Poltrona ocupada!\n"
 
 # vetor com as poltronas
 poltronasArray: .space 35*4;
@@ -190,17 +191,15 @@ IMPRIME_POLTRONAS:
 
             addi    $t1,    $t1,    1                       # t1 = t1 + 1
 
-            addi    $t2,    $t2,    4                       # t2 = t2 + 4
-
             lw		$t3,    poltronasArray($t2)		        # t3 = poltronasArray[t2]
 
-            beq     $t4,    0,       POLTRONA_LIVRE         # Se t4 == 0, entra no POLTRONA_LIVRE
+            addi    $t2,    $t2,    4                       # t2 = t2 + 4
 
-            li      $v0,    PRINT_STR                       # syscall para imprimir na tela
-            la      $a0,    textopoltronasocupado
+            li      $v0,    PRINT_INT
+            move    $a0,    $t3     # $a0 = $t0
             syscall
-
-            li      $v0,    PRINT_STR                       # syscall para imprimir na tela
+            
+            li      $v0,    PRINT_STR                   # syscall para imprimir na tela
             la      $a0,    textopoltronasdiv
             syscall
 
@@ -256,18 +255,6 @@ IMPRIME_POLTRONAS:
 
             j       PRINT_LOOP_LINE                     # Chama a funcao PRINT_LOOP_LINE
                 
-
-        POLTRONA_LIVRE:
-            li      $v0,    PRINT_STR                   # syscall para imprimir na tela
-            la      $a0,    textopoltronaslivre
-            syscall
-
-            li      $v0,    PRINT_STR                   # syscall para imprimir na tela
-            la      $a0,    textopoltronasdiv
-            syscall
-
-            j       PRINT_LOOP_COL                      # Chama a funcao PRINT_LOOP_LINE
-
     END_PRINT_LOOP_LINE:
         li      $v0,    PRINT_STR               # syscall para imprimir na tela
         la      $a0,    textopoltronaslinha
@@ -294,5 +281,89 @@ COMPRAR_POLTRONA:
     li     $v0,    PRINT_STR           # syscall para imprimir na tela
     la     $a0,    textocompra
     syscall
+
+    LINHA_MAIOR = 8;
+    COLUNA_MAIOR = 6;
+    VALOR_MENOR = 0;
+
+    LOOP_COLUNA_COMPRA:
+        li     $v0,    PRINT_STR           # syscall para imprimir na tela
+        la     $a0,    textocompra1
+        syscall
+
+        li      $v0,    READ_KEYBOARD_INT   # syscall para ler do teclado
+        syscall
+        move    $s0,    $v0                 # Salva o valor lido para $s0
+
+        li 	    $t1,    COLUNA_MAIOR                        # t1 = 6
+        bge	    $s0,    $t1,    VALOR_INVALIDO_COMPRA       # Se $s0 >= 6, entra no VALOR_INVALIDO_COMPRA
+        blt	    $t1,    $s0,    LIMITE_COLUNA_COMPRA        # Se $s0 < 6, entra no ELSE 
+
+    LIMITE_COLUNA_COMPRA:
+        li      $t1,    VALOR_MENOR                         # t4 = 0
+        bgtz    $s0,    LOOP_LINHA_COMPRA                   # Se $s0 > 0, entra no LOOP_LINHA_COMPRA
+        ble	    $s0,    $t1,    VALOR_INVALIDO_COMPRA       # Se $s0 <= 0, entra no VALOR_INVALIDO_COMPRA
+
+    LOOP_LINHA_COMPRA:
+        li     $v0,    PRINT_STR           # syscall para imprimir na tela
+        la     $a0,    textocompra2
+        syscall
+
+        li      $v0,    READ_KEYBOARD_INT   # syscall para ler do teclado
+        syscall
+        move    $s1,    $v0                 # Salva o valor lido para $s0
+
+        li 	    $t1,    LINHA_MAIOR                         # t1 = 8
+        bge	    $s1,    $t1,    VALOR_INVALIDO_COMPRA       # Se $s0 >= 8, entra no VALOR_INVALIDO_COMPRA
+        blt	    $t1,    $s0,    LIMITE_LINHA_COMPRA        # Se $s0 < 6, entra no ELSE 
+
+    LIMITE_LINHA_COMPRA:
+        li      $t1,    VALOR_MENOR                         # t4 = 0
+        bgtz    $s1,    FINALIZA_COMPRA                     # Se $s0 > 0, entra no END_WHILE
+        ble	    $s1,    $t1,    VALOR_INVALIDO_COMPRA       # Se $s0 <= 0, entra no VALOR_INVALIDO_COMPRA
+
+    VALOR_INVALIDO_COMPRA:
+        li      $v0,    PRINT_STR          # syscall para imprimir na tela
+        la      $a0,    textopinvalid      # Imprime mensagem de erro
+        syscall
+
+        j COMPRAR_POLTRONA
+
+    FINALIZA_COMPRA:
+        #multipica a linha pela coluna
+        li      $t1,    1                   # t1 = 1
+        sub		$s1,    $s1,    $t1		    # $s0 = $s0 - $t1
+        
+        li      $t1,    5                   # t1 = 5
+        mult    $s1,    $t1                 # executa a multiplicação entre $s0 e $s1 e armazena o resultado em $s2
+        mflo    $s1
+
+        add		$s2,    $s0,    $s1		    # $s2 = $s0 + $s1
+        
+
+        li      $t0,    4       # t0 = 4
+        mult    $s2,    $t0     # executa a multiplicação entre $s2 e $t0 e armazena o resultado em $s2
+        mflo    $s2             # armazena o resultado da multiplicação em $s0
+
+        sub		$s2,    $s2,    $t0	    # $s0 = $s0 - $t0
+
+        lw      $t0,    poltronasArray($s2)   # carrega o valor da poltrona na posicao $s2
+
+        li      $t1,    0      # t1 = 0
+
+        bne		$t0,    $t1,    POLTRONA_OCUPADA
+
+        li      $t1,    1       # t1 = 1
+
+        sw	    $t1,    poltronasArray($s2)   # armazena o valor 0 na posicao $s2
+
+        j MENU
+        
+    POLTRONA_OCUPADA:
+        li      $v0,    PRINT_STR          # syscall para imprimir na tela
+        la      $a0,    textopoltronaocupada
+        syscall
+        
+        j COMPRAR_POLTRONA
     
     jr $ra    
